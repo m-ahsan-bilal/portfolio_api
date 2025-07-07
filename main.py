@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 import logging
 from datetime import datetime
 import re
+from email_notifications import EmailNotifier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,29 +13,13 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Portfolio Contact API", version="1.0.0")
 
-# Add CORS middleware to allow requests from your Flutter web app
+# Add CORS middleware to allow requests from any origin (for development only)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://m-ahsan-bilal.github.io",  # Your GitHub Pages domain
-        "https://ahsan.dev",  # Your custom domain
-        "https://www.ahsan.dev",  # Your custom domain with www
-        "http://localhost:3000",  # Local development
-        "http://localhost:8080",  # Local development
-        "http://localhost:5000",  # Flutter web default
-        "http://localhost:5001",  # Flutter web alternative
-        "http://localhost:8081",  # Flutter web alternative
-        "http://127.0.0.1:3000",  # Local development
-        "http://127.0.0.1:8080",  # Local development
-        "http://127.0.0.1:5000",  # Flutter web localhost
-        "http://127.0.0.1:5001",  # Flutter web alternative
-        "http://127.0.0.1:8081",  # Flutter web alternative
-        "http://localhost:59930",  # Fixed: Added missing comma
-        "http://localhost:59930/#/contact"
-    ],
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Pydantic model for contact form data validation
@@ -70,6 +55,8 @@ contact_submissions = []
 
 # Simple rate limiting - store recent submissions by IP
 recent_submissions = {}
+
+notifier = EmailNotifier()
 
 @app.get("/")
 def read_root():
@@ -125,6 +112,11 @@ async def submit_contact_form(contact: ContactForm, request: Request):
         
         # Store the submission (in production, save to database)
         contact_submissions.append(submission)
+
+        # Send email notification
+        email_sent = notifier.send_contact_notification(submission)
+        if not email_sent:
+            logger.error(f"Failed to send email notification for submission ID: {submission['id']}")
         
         # Here you would typically:
         # 1. Send an email notification to yourself
