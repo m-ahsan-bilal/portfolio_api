@@ -105,5 +105,4 @@ class EmailNotifier:
             
         except Exception as e:
             print(f"❌ Error sending daily summary: {e}")
-            return False
-
+            return False 

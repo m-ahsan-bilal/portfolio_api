@@ -29,7 +29,7 @@ app.add_middleware(
         "http://127.0.0.1:5000",  # Flutter web localhost
         "http://127.0.0.1:5001",  # Flutter web alternative
         "http://127.0.0.1:8081",  # Flutter web alternative
-        "http://localhost:59930"
+        "http://localhost:59930",  # Fixed: Added missing comma
         "http://localhost:59930/#/contact"
     ],
     allow_credentials=True,
@@ -181,4 +181,4 @@ async def get_contact_submission(submission_id: int):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
