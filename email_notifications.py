@@ -10,9 +10,9 @@ from datetime import datetime
 class EmailNotifier:
     def __init__(self):
         # Email configuration - you'll need to set these up
-        self.sender_email = os.getenv("SENDER_EMAIL", "your-email@gmail.com")
-        self.sender_password = os.getenv("SENDER_PASSWORD", "your-app-password")
-        self.admin_email = os.getenv("ADMIN_EMAIL", "your-email@gmail.com")
+        self.sender_email = os.getenv("SENDER_EMAIL", "ahsan123.bilal@gmail.com")
+        self.sender_password = os.getenv("SENDER_PASSWORD", "ajwb qijf gibx lhif")
+        self.admin_email = os.getenv("ADMIN_EMAIL", "ahsan123.bilal@gmail.com")
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
         
@@ -107,19 +107,3 @@ class EmailNotifier:
             print(f"❌ Error sending daily summary: {e}")
             return False
 
-# Usage example:
-"""
-# In your main.py, add this to the contact form submission:
-
-from email_notifications import EmailNotifier
-
-email_notifier = EmailNotifier()
-
-# In your submit_contact_form function:
-if email_notifier.send_contact_notification({
-    'email': contact.email,
-    'topic': contact.topic,
-    'message': contact.message
-}):
-    print("Email notification sent successfully")
-""" 

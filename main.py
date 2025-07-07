@@ -1,9 +1,10 @@
 from typing import Union
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 import logging
 from datetime import datetime
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,9 +15,13 @@ app = FastAPI(title="Portfolio Contact API", version="1.0.0")
 # Add CORS middleware to allow requests from your Flutter web app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your specific domain
+    allow_origins=[
+        "https://m-ahsan-bilal.github.io",  # Your GitHub Pages domain
+        "http://localhost:3000",  # Local development
+        "http://localhost:8080",  # Local development
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -25,9 +30,34 @@ class ContactForm(BaseModel):
     email: EmailStr
     topic: str
     message: str
+    
+    @field_validator('topic')
+    @classmethod
+    def validate_topic(cls, v):
+        if len(v.strip()) < 2:
+            raise ValueError('Topic must be at least 2 characters')
+        if len(v) > 100:
+            raise ValueError('Topic must be less than 100 characters')
+        # Remove any potentially dangerous characters
+        v = re.sub(r'[<>"\']', '', v)
+        return v.strip()
+    
+    @field_validator('message')
+    @classmethod
+    def validate_message(cls, v):
+        if len(v.strip()) < 10:
+            raise ValueError('Message must be at least 10 characters')
+        if len(v) > 2000:
+            raise ValueError('Message must be less than 2000 characters')
+        # Remove any potentially dangerous characters
+        v = re.sub(r'[<>"\']', '', v)
+        return v.strip()
 
 # Store contact submissions (in a real app, you'd use a database)
 contact_submissions = []
+
+# Simple rate limiting - store recent submissions by IP
+recent_submissions = {}
 
 @app.get("/")
 def read_root():
@@ -38,13 +68,36 @@ def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 @app.post("/contact", response_model=dict)
-async def submit_contact_form(contact: ContactForm):
+async def submit_contact_form(contact: ContactForm, request: Request):
     """
     Submit a contact form with email, topic, and message
     """
     try:
+        # Get client IP for rate limiting
+        client_ip = request.client.host if request.client else "unknown"
+        
+        # Simple rate limiting: max 3 submissions per IP per hour
+        current_time = datetime.now()
+        if client_ip in recent_submissions:
+            # Remove old entries (older than 1 hour)
+            recent_submissions[client_ip] = [
+                time for time in recent_submissions[client_ip] 
+                if (current_time - time).seconds < 3600
+            ]
+            
+            if len(recent_submissions[client_ip]) >= 3:
+                raise HTTPException(
+                    status_code=429, 
+                    detail="Too many submissions. Please wait before submitting again."
+                )
+        
+        # Add current submission to rate limiting
+        if client_ip not in recent_submissions:
+            recent_submissions[client_ip] = []
+        recent_submissions[client_ip].append(current_time)
+        
         # Log the contact submission
-        logger.info(f"New contact form submission from: {contact.email}")
+        logger.info(f"New contact form submission from: {contact.email} (IP: {client_ip})")
         logger.info(f"Topic: {contact.topic}")
         
         # Create submission record
@@ -53,8 +106,9 @@ async def submit_contact_form(contact: ContactForm):
             "email": contact.email,
             "topic": contact.topic,
             "message": contact.message,
-            "timestamp": datetime.now().isoformat(),
-            "status": "received"
+            "timestamp": current_time.isoformat(),
+            "status": "received",
+            "ip_address": client_ip
         }
         
         # Store the submission (in production, save to database)
@@ -74,6 +128,8 @@ async def submit_contact_form(contact: ContactForm):
             "timestamp": submission["timestamp"]
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing contact form: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
