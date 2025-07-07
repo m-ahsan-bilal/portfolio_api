@@ -29,6 +29,8 @@ app.add_middleware(
         "http://127.0.0.1:5000",  # Flutter web localhost
         "http://127.0.0.1:5001",  # Flutter web alternative
         "http://127.0.0.1:8081",  # Flutter web alternative
+        "http://localhost:59930"
+        "http://localhost:59930/#/contact"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
