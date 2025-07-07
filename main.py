@@ -17,11 +17,21 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://m-ahsan-bilal.github.io",  # Your GitHub Pages domain
+        "https://ahsan.dev",  # Your custom domain
+        "https://www.ahsan.dev",  # Your custom domain with www
         "http://localhost:3000",  # Local development
         "http://localhost:8080",  # Local development
+        "http://localhost:5000",  # Flutter web default
+        "http://localhost:5001",  # Flutter web alternative
+        "http://localhost:8081",  # Flutter web alternative
+        "http://127.0.0.1:3000",  # Local development
+        "http://127.0.0.1:8080",  # Local development
+        "http://127.0.0.1:5000",  # Flutter web localhost
+        "http://127.0.0.1:5001",  # Flutter web alternative
+        "http://127.0.0.1:8081",  # Flutter web alternative
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
